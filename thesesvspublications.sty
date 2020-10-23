@@ -1,0 +1,101 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thesesvspublications}[2020/10/23 Theses vs. Publications table generator]
+\RequirePackage{etoolbox}
+\RequirePackage{xparse}
+
+\ExplSyntaxOn
+% (via https://tex.stackexchange.com/a/300215)
+\NewExpandableDocumentCommand{\egreg@Repeat}{O{}mm}
+ {
+  \int_compare:nT { #2 > 0 }
+   {
+    #3 \prg_replicate:nn { #2 - 1 } { #1#3 }
+   }
+ }
+\ExplSyntaxOff
+
+%% Internal counter that is used for various iteration purposes.
+\newcounter{tvp@Cursor}
+
+%% The total number of theses defined.
+\newcounter{tvp@ThesisCount}
+
+%% Returns the number of theses that are defined.
+\newcommand{\numtheses}{\the\value{tvp@ThesisCnt}}
+
+%% \definethesis{<key>}{<title>}{<thesis summary>}
+%% defines the given thesis with the key.
+\newcommand{\definethesis}[3]{%
+    \stepcounter{tvp@ThesisCount}%
+    % 
+    \listcsgadd{tvp@Theses}{#1}%
+    \expandafter\def\csname tvp@Theses@\thetvp@ThesisCount\endcsname{#1}%
+    \expandafter\def\csname tvp@ThesisTitles@\thetvp@ThesisCount\endcsname{#2}%
+    \expandafter\def\csname tvp@ThesisTexts@\thetvp@ThesisCount\endcsname{#3}%
+}
+
+%% Retrieve the name for the <index>th thesis.
+\newcommand{\tvp@ThesisName}[1]{\csname tvp@Theses@#1\endcsname}
+%% Retrieve the title for the <index>th thesis.
+\newcommand{\tvp@ThesisTitle}[1]{\csname tvp@ThesisTitles@#1\endcsname}
+%% Retrieve the thesis summary for the <index>th thesis.
+\newcommand{\tvp@ThesisText}[1]{\csname tvp@ThesisTexts@#1\endcsname}
+
+%% Internal command which sets the counter tvp@Cursor to the index of the
+%% thesis with the given <key>.
+\newcommand\tvp@FindThesisIndex[1]{%
+    \renewcommand*{\do}[1]{%
+        \ifstrequal{##1}{#1}%
+            {\listbreak}%
+            {\stepcounter{tvp@Cursor}}%
+    }%
+    \setcounter{tvp@Cursor}{0}%
+    \dolistcsloop{tvp@Theses}%
+    \stepcounter{tvp@Cursor}%
+    %
+    \ifnumgreater{\value{tvp@Cursor}}{\value{tvp@ThesisCount}}{%
+        \PackageError{thesesvspublications}{Requested information about thesis '#1' but it doesn't exist}{%
+            Check that functions such as \detokenize{\thesistitle} are not given undefined thesis keys!}%
+    }%
+}
+
+%% Retrieve the title for the thesis defined as <key>.
+\newcommand{\thesistitle}[1]{%
+    \tvp@FindThesisIndex{#1}%
+    \tvp@ThesisTitle{\thetvp@Cursor}%
+}
+
+%% Retrieve the thesis summary for the thesis defined as <key>.
+\newcommand{\thesissummary}[1]{%
+    \tvp@FindThesisIndex{#1}%
+    \tvp@ThesisText{\thetvp@Cursor}%
+}
+
+\newtoggle{tvp@IsCurrentRowHighlighted}
+
+%% tvp@RenderRow{<key>}
+%% Renders the row for the thesis defined as <key>.
+\newcommand{\tvp@RenderRow}[1]{%
+    \tvp@FindThesisIndex{#1}%
+    \thetvp@Cursor. \thesistitle{#1} %
+        \\
+}
+
+%% Typesets the Theses vs. Publications table.
+%% The argument of <current-thesis> will highlight the row of the given thesis, if given.
+\newcommand{\ThesesVSPublications}[1][0]{%
+    \renewcommand*{\do}[1]{%
+        \tvp@RenderRow{##1}
+        \hline
+    }
+    %
+    %\egreg@Repeat[:]{\expandafter\thetvp@ThesisCount}{x}
+    %\egreg@Repeat[&]{\the\value{tvp@ThesisCount}{x}
+    \begin{tabular}{|l|}%|\egreg@Repeat[|]{\expandafter\value{tvp@ThesisCount}}{c}}
+        \hline
+        \dolistcsloop{tvp@Theses}%
+    %    a \egreg@Repeat[&]{\the\value{tvp@ThesisCount}{x}
+    \end{tabular}%
+}
+
+\endinput
