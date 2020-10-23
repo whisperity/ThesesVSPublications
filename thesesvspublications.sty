@@ -1,6 +1,7 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{thesesvspublications}[2020/10/23 Theses vs. Publications table generator]
+\ProvidesPackage{thesesvspublications}[2020/10/23 v0.1 Theses vs. Publications table generator]
 \RequirePackage{etoolbox}
+\RequirePackage{forloop}
 \RequirePackage{xparse}
 
 \ExplSyntaxOn
@@ -14,8 +15,10 @@
  }
 \ExplSyntaxOff
 
-%% Internal counter that is used for various iteration purposes.
-\newcounter{tvp@Cursor}
+%% Internal cursors that are used for various iteration purposes.
+\newcounter{tvp@CursorA}
+\newcounter{tvp@CursorB}
+\newcounter{tvp@CursorC}
 
 %% The total number of theses defined.
 \newcounter{tvp@ThesisCount}
@@ -41,19 +44,19 @@
 %% Retrieve the thesis summary for the <index>th thesis.
 \newcommand{\tvp@ThesisText}[1]{\csname tvp@ThesisTexts@#1\endcsname}
 
-%% Internal command which sets the counter tvp@Cursor to the index of the
+%% Internal command which sets the counter tvp@CursorA to the index of the
 %% thesis with the given <key>.
 \newcommand\tvp@FindThesisIndex[1]{%
     \renewcommand*{\do}[1]{%
         \ifstrequal{##1}{#1}%
             {\listbreak}%
-            {\stepcounter{tvp@Cursor}}%
+            {\stepcounter{tvp@CursorA}}%
     }%
-    \setcounter{tvp@Cursor}{0}%
+    \setcounter{tvp@CursorA}{0}%
     \dolistcsloop{tvp@Theses}%
-    \stepcounter{tvp@Cursor}%
+    \stepcounter{tvp@CursorA}%
     %
-    \ifnumgreater{\value{tvp@Cursor}}{\value{tvp@ThesisCount}}{%
+    \ifnumgreater{\value{tvp@CursorA}}{\value{tvp@ThesisCount}}{%
         \PackageError{thesesvspublications}{Requested information about thesis '#1' but it doesn't exist}{%
             Check that functions such as \detokenize{\thesistitle} are not given undefined thesis keys!}%
     }%
@@ -62,39 +65,106 @@
 %% Retrieve the title for the thesis defined as <key>.
 \newcommand{\thesistitle}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \tvp@ThesisTitle{\thetvp@Cursor}%
+    \tvp@ThesisTitle{\thetvp@CursorA}%
 }
 
 %% Retrieve the thesis summary for the thesis defined as <key>.
 \newcommand{\thesissummary}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \tvp@ThesisText{\thetvp@Cursor}%
+    \tvp@ThesisText{\thetvp@CursorA}%
 }
 
+
+%% The total number of publications defined.
+\newcounter{tvp@PublicationCount}
+
+%% Returns the number of publications that are defined.
+\newcommand{\numpublications}{\the\value{tvp@ThesisCnt}}
+
+%% \definethesis{<key>}{<text>}
+%% defines the given publication text body with the given key.
+\newcommand{\definepublication}[2]{%
+    \stepcounter{tvp@PublicationCount}%
+    % 
+    \listcsgadd{tvp@Publications}{#1}%
+    \expandafter\def\csname tvp@Publications@\thetvp@PublicationCount\endcsname{#1}%
+    \expandafter\def\csname tvp@PublicationTexts@\thetvp@PublicationCount\endcsname{#2}%
+}
+
+%% Retrieve the name for the <index>th publication.
+\newcommand{\tvp@PublicationName}[1]{\csname tvp@Publications@#1\endcsname}
+%% Retrieve the title for the <index>th publication.
+\newcommand{\tvp@PublicationText}[1]{\csname tvp@PublicationTexts@#1\endcsname}
+
+%% Internal command which sets the counter tvp@CursorB to the index of the
+%% publication with the given <key>.
+\newcommand\tvp@FindPublicationIndex[1]{%
+    \renewcommand*{\do}[1]{%
+        \ifstrequal{##1}{#1}%
+            {\listbreak}%
+            {\stepcounter{tvp@CursorB}}%
+    }%
+    \setcounter{tvp@CursorB}{0}%
+    \dolistcsloop{tvp@Publications}%
+    \stepcounter{tvp@CursorB}%
+    %
+    \ifnumgreater{\value{tvp@CursorB}}{\value{tvp@PublicationCount}}{%
+        \PackageError{thesesvspublications}{Requested information about publication '#1' but it doesn't exist}{%
+            Check that functions such as \detokenize{\publication} are not given undefined publication keys!}%
+    }%
+}
+
+%% Retrieve the text for the publication defined as <key>.
+\newcommand{\publication}[1]{%
+    \tvp@FindPublicationIndex{#1}%
+    \tvp@PublicationText{\thetvp@CursorB}%
+}
+
+%% Renders the heading of the table.
+\newcommand{\tvp@RenderHeading}{%
+    % This is ugly as hell, that we have to increment and decrement this counter,
+    % but \dolistcsloop{} doesn't seem to work with printing the publications'
+    % text with & in it...
+    %
+    \setcounter{tvp@CursorB}{\value{tvp@PublicationCount}}%
+    \stepcounter{tvp@CursorB}%
+    %
+    Thesis name%
+    \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorB}}{%
+        & \tvp@PublicationText{\thetvp@CursorC}%
+    }%
+}
+
+%% Internal toggle that specifies whether the current row of \ThesesVSPublications
+%% should be highlighted or not.
 \newtoggle{tvp@IsCurrentRowHighlighted}
 
 %% tvp@RenderRow{<key>}
 %% Renders the row for the thesis defined as <key>.
 \newcommand{\tvp@RenderRow}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \thetvp@Cursor. \thesistitle{#1} %
-        \\
+    \thetvp@CursorA. \thesistitle{#1} %
+    
+        % TODO: The blips for the publications.
 }
+
+\newcommand{\tvp@RowRenderHELPER}[1]{} % Dummy.
 
 %% Typesets the Theses vs. Publications table.
 %% The argument of <current-thesis> will highlight the row of the given thesis, if given.
 \newcommand{\ThesesVSPublications}[1][0]{%
-    \renewcommand*{\do}[1]{%
-        \tvp@RenderRow{##1}
-        \hline
+    \renewcommand{\tvp@RowRenderHELPER}[1]{%
+        \tvp@RenderRow{##1} \\
+        \hline%
+    }%
+    \begin{tabular}{|l|%
+        \egreg@Repeat[|]{\expandafter\thetvp@PublicationCount}{c}%
+        |%
     }
-    %
-    %\egreg@Repeat[:]{\expandafter\thetvp@ThesisCount}{x}
-    %\egreg@Repeat[&]{\the\value{tvp@ThesisCount}{x}
-    \begin{tabular}{|l|}%|\egreg@Repeat[|]{\expandafter\value{tvp@ThesisCount}}{c}}
         \hline
-        \dolistcsloop{tvp@Theses}%
-    %    a \egreg@Repeat[&]{\the\value{tvp@ThesisCount}{x}
+        \tvp@RenderHeading \\
+        \hline
+        \forlistcsloop{\tvp@RowRenderHELPER}{tvp@Theses}%
     \end{tabular}%
 }
 
