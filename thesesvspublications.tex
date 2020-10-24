@@ -24,21 +24,20 @@
 \publication{pppp}
 \publication{pxyz}
 
-
-aaaaaaaaaaaa
+\assignpublication{pppp}{tfoo}
+\assignpublication{pasd}{tbaz}
 
 \begin{table}[]
     \centering
-    \begin{tabular}{c|c}
-        a & b \\
-        c & d
-    \end{tabular}
-    \caption{Caption}
-    \label{tab:my_label}
+    \ThesesVSPublications    
+    \caption{Theses vs.\ Publications}
 \end{table}
 
-\ThesesVSPublications
-
+\begin{table}[]
+    \centering
+    \ThesesVSPublications[tfoo]
+    \caption{Theses vs.\ Publications for \texttt{tfoo} (\thesistitle{tfoo}) highlighted.}
+\end{table}
 
 \fbox{\textbf{End Document}}
 \end{document}

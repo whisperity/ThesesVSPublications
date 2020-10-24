@@ -1,7 +1,9 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{thesesvspublications}[2020/10/23 v0.1 Theses vs. Publications table generator]
+
 \RequirePackage{etoolbox}
 \RequirePackage{forloop}
+\RequirePackage{ifthen}
 \RequirePackage{xparse}
 
 \ExplSyntaxOn
@@ -16,19 +18,19 @@
 \ExplSyntaxOff
 
 %% Internal cursors that are used for various iteration purposes.
-\newcounter{tvp@CursorA}
-\newcounter{tvp@CursorB}
+\newcounter{tvp@CursorT}
+\newcounter{tvp@CursorP}
 \newcounter{tvp@CursorC}
 
 %% The total number of theses defined.
 \newcounter{tvp@ThesisCount}
 
 %% Returns the number of theses that are defined.
-\newcommand{\numtheses}{\the\value{tvp@ThesisCnt}}
+\newrobustcmd{\numtheses}{\the\value{tvp@ThesisCnt}}
 
 %% \definethesis{<key>}{<title>}{<thesis summary>}
 %% defines the given thesis with the key.
-\newcommand{\definethesis}[3]{%
+\newrobustcmd{\definethesis}[3]{%
     \stepcounter{tvp@ThesisCount}%
     % 
     \listcsgadd{tvp@Theses}{#1}%
@@ -44,34 +46,34 @@
 %% Retrieve the thesis summary for the <index>th thesis.
 \newcommand{\tvp@ThesisText}[1]{\csname tvp@ThesisTexts@#1\endcsname}
 
-%% Internal command which sets the counter tvp@CursorA to the index of the
+%% Internal command which sets the counter tvp@CursorT to the index of the
 %% thesis with the given <key>.
 \newcommand\tvp@FindThesisIndex[1]{%
     \renewcommand*{\do}[1]{%
         \ifstrequal{##1}{#1}%
             {\listbreak}%
-            {\stepcounter{tvp@CursorA}}%
+            {\stepcounter{tvp@CursorT}}%
     }%
-    \setcounter{tvp@CursorA}{0}%
+    \setcounter{tvp@CursorT}{0}%
     \dolistcsloop{tvp@Theses}%
-    \stepcounter{tvp@CursorA}%
+    \stepcounter{tvp@CursorT}%
     %
-    \ifnumgreater{\value{tvp@CursorA}}{\value{tvp@ThesisCount}}{%
+    \ifnumgreater{\value{tvp@CursorT}}{\value{tvp@ThesisCount}}{%
         \PackageError{thesesvspublications}{Requested information about thesis '#1' but it doesn't exist}{%
             Check that functions such as \detokenize{\thesistitle} are not given undefined thesis keys!}%
     }%
 }
 
 %% Retrieve the title for the thesis defined as <key>.
-\newcommand{\thesistitle}[1]{%
+\newrobustcmd{\thesistitle}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \tvp@ThesisTitle{\thetvp@CursorA}%
+    \tvp@ThesisTitle{\thetvp@CursorT}%
 }
 
 %% Retrieve the thesis summary for the thesis defined as <key>.
-\newcommand{\thesissummary}[1]{%
+\newrobustcmd{\thesissummary}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \tvp@ThesisText{\thetvp@CursorA}%
+    \tvp@ThesisText{\thetvp@CursorT}%
 }
 
 
@@ -79,11 +81,11 @@
 \newcounter{tvp@PublicationCount}
 
 %% Returns the number of publications that are defined.
-\newcommand{\numpublications}{\the\value{tvp@ThesisCnt}}
+\newrobustcmd{\numpublications}{\the\value{tvp@ThesisCnt}}
 
 %% \definethesis{<key>}{<text>}
 %% defines the given publication text body with the given key.
-\newcommand{\definepublication}[2]{%
+\newrobustcmd{\definepublication}[2]{%
     \stepcounter{tvp@PublicationCount}%
     % 
     \listcsgadd{tvp@Publications}{#1}%
@@ -96,56 +98,80 @@
 %% Retrieve the title for the <index>th publication.
 \newcommand{\tvp@PublicationText}[1]{\csname tvp@PublicationTexts@#1\endcsname}
 
-%% Internal command which sets the counter tvp@CursorB to the index of the
+%% Internal command which sets the counter tvp@CursorP to the index of the
 %% publication with the given <key>.
 \newcommand\tvp@FindPublicationIndex[1]{%
     \renewcommand*{\do}[1]{%
         \ifstrequal{##1}{#1}%
             {\listbreak}%
-            {\stepcounter{tvp@CursorB}}%
+            {\stepcounter{tvp@CursorP}}%
     }%
-    \setcounter{tvp@CursorB}{0}%
+    \setcounter{tvp@CursorP}{0}%
     \dolistcsloop{tvp@Publications}%
-    \stepcounter{tvp@CursorB}%
+    \stepcounter{tvp@CursorP}%
     %
-    \ifnumgreater{\value{tvp@CursorB}}{\value{tvp@PublicationCount}}{%
+    \ifnumgreater{\value{tvp@CursorP}}{\value{tvp@PublicationCount}}{%
         \PackageError{thesesvspublications}{Requested information about publication '#1' but it doesn't exist}{%
             Check that functions such as \detokenize{\publication} are not given undefined publication keys!}%
     }%
 }
 
 %% Retrieve the text for the publication defined as <key>.
-\newcommand{\publication}[1]{%
+\newrobustcmd{\publication}[1]{%
     \tvp@FindPublicationIndex{#1}%
-    \tvp@PublicationText{\thetvp@CursorB}%
+    \tvp@PublicationText{\thetvp@CursorP}%
+}
+
+%% assignpublication <publication-key> <thesis-key>
+%% assigns the given publication to be relevant for the given thesis.
+\newrobustcmd{\assignpublication}[2]{%
+    \tvp@FindThesisIndex{#2}     % CursorT set.
+    \tvp@FindPublicationIndex{#1}% CursorP set.
+    % Format is: (thesis,publication) pairs in the list.
+    \listcsxadd{tvp@AssignMatrix}{(\tvp@ThesisName{\thetvp@CursorT},\tvp@PublicationName{\thetvp@CursorP})}%
 }
 
 %% Renders the heading of the table.
 \newcommand{\tvp@RenderHeading}{%
-    % This is ugly as hell, that we have to increment and decrement this counter,
-    % but \dolistcsloop{} doesn't seem to work with printing the publications'
-    % text with & in it...
-    %
-    \setcounter{tvp@CursorB}{\value{tvp@PublicationCount}}%
-    \stepcounter{tvp@CursorB}%
+    \setcounter{tvp@CursorP}{\value{tvp@PublicationCount}}%
+    \stepcounter{tvp@CursorP}%
     %
     Thesis name%
-    \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorB}}{%
+    \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorP}}{%
         & \tvp@PublicationText{\thetvp@CursorC}%
     }%
+}
+
+%% tvp@ThesisPublicationAssigned {<thesis-key>} {<publication-key>} {<if-true>} {<if-false>}
+%% If the publication given is assigned by the client to the thesis given, executes
+%% <if-true>, otherwise, <if-false>.
+\newcommand{\tvp@ThesisPublicationAssigned}[4]{%
+    \xifinlistcs{(#1,#2)}{tvp@AssignMatrix}{#3}{#4}%
 }
 
 %% Internal toggle that specifies whether the current row of \ThesesVSPublications
 %% should be highlighted or not.
 \newtoggle{tvp@IsCurrentRowHighlighted}
 
+%% tvp@RowBlip{<thesis-key>}{<publication-key>}
+%% Returns the visual blip part of the \ThesesVSPublications table.
+\newcommand{\tvp@RowBlip}[2]{%
+    \tvp@ThesisPublicationAssigned{#1}{#2}{%
+        \iftoggle{tvp@IsCurrentRowHighlighted}{\textbullet}{\textopenbullet}%
+    }{}%
+}
+
 %% tvp@RenderRow{<key>}
 %% Renders the row for the thesis defined as <key>.
 \newcommand{\tvp@RenderRow}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \thetvp@CursorA. \thesistitle{#1} %
-    
-        % TODO: The blips for the publications.
+    \thetvp@CursorT. \thesistitle{#1} %
+    %
+    \setcounter{tvp@CursorP}{\value{tvp@PublicationCount}}%
+    \stepcounter{tvp@CursorP}%
+    \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorP}}{%
+        & \tvp@RowBlip{#1}{\tvp@PublicationName{\thetvp@CursorC}}%
+    }%
 }
 
 \newcommand{\tvp@RowRenderHELPER}[1]{} % Dummy.
@@ -154,9 +180,21 @@
 %% The argument of <current-thesis> will highlight the row of the given thesis, if given.
 \newcommand{\ThesesVSPublications}[1][0]{%
     \renewcommand{\tvp@RowRenderHELPER}[1]{%
+        % Set highlight for current row.
+        \ifthenelse{\equal{##1}{#1}}{%
+            \global\toggletrue{tvp@IsCurrentRowHighlighted}%
+        }{%
+            \global\togglefalse{tvp@IsCurrentRowHighlighted}%
+        }%
+        % Set highlight for row if all row should be highlighted.
+        \ifthenelse{\equal{#1}{0}}{%
+            \global\toggletrue{tvp@IsCurrentRowHighlighted}%
+        }{}%
+        %
         \tvp@RenderRow{##1} \\
         \hline%
     }%
+    %
     \begin{tabular}{|l|%
         \egreg@Repeat[|]{\expandafter\thetvp@PublicationCount}{c}%
         |%
