@@ -1,43 +1,201 @@
 \documentclass{article}
-\usepackage{thesesvspublications}
+\usepackage{thesesvspublications} % Own package! :3
+
+\usepackage{etoolbox}
+\usepackage{hyperref,cleveref}
+    \hypersetup{
+        %pdftoolbar=true,        % show Acrobat’s toolbar?
+        %pdfmenubar=true,        % show Acrobat’s menu?
+        %pdffitwindow=false,     % window fit to page when opened
+        %pdfstartview={FitH},    % fits the width of the page to the window
+        pdftitle={The thesesvspublications Package},    % title
+        pdfauthor={Whisperity},     % author
+        pdfsubject={Thesis to Reference assocation matrix generator},   % subject of the document
+%        pdfcreator={LaTeX with hyperref},   % creator of the document
+%        pdfproducer={pdfTeX-1.40.21}, % producer of the document
+%        pdfkeywords={}, % list of keywords
+        pdfnewwindow=true,      % links in new window
+        hidelinks,              % disable link borders
+        colorlinks=false,       % false: boxed links; true: colored links
+        linkcolor=red,          % color of internal links (change box color with linkbordercolor)
+        citecolor=green,        % color of links to bibliography
+        filecolor=magenta,      % color of file links
+        urlcolor=cyan           % color of external links
+    }
+%\newcommand{\cref}[1]{\texttt{#1}}
+\usepackage{minted}
+    \usemintedstyle{borland}
+    \setminted{autogobble}
+    \setminted{escapeinside=@@}
+    \setminted{mathescape}
+\usepackage{placeins}
+\usepackage{todonotes}
+\usepackage{xcolor}
+
+\newrobustcmd{\release}[3]{%
+    \subsection{\emph{#1}: \texttt{#2} - #3}\label{release-#2}%
+}
+
+\newrobustcmd{\command}[3]{%
+    \paragraph{\textsf{#1}} \textbf{\color{blue} \texttt{#2}}
+    
+    #3
+}
+
+\newrobustcmd{\tvpDisable}{%
+    \let\theOldTVP\ThesesVSPublications%
+    \def\ThesesVSPublications{}%
+}
+\newrobustcmd{\tvpEnable}{%
+    \let\ThesesVSPublications\theOldTVP
+}
+
+\newwrite\tempfile
 
 \begin{document}
 
-\definethesis{tfoo}{Foo}{X}
-\definethesis{tbar}{Bar}{Y}
-\definethesis{tbaz}{Baz}{Z}
+\vspace*{0in}
+\begin{center}
+    \LARGE The \textsf{thesesvspublications} Package \\
+    \small \rule{0in}{1em} Thesis to Reference association matrix generator \\
+    \large \rule{0in}{2em} Whisperity \\
+    %[redacted]\\
+    \rule{0em}{2em}\thesesvspublicationsReleaseDate \\
+    v\thesesvspublicationsVersion
+\end{center}
 
-\definepublication{pasd}{ASD}
-\definepublication{pxyz}{XYZ}
-\definepublication{pppp}{pppp}
+\iffalse
 
-%\TheTheses
+\section{Introduction}\label{intro}
+The \textsf{thesesvspublications} package allows a convenient creation of bibliography association matrices.
+The package aims to automate the generation, without the user having to manually write the table's code and have to deal with the inefficiency of copy-pasting information.
+The package's interface is simple, the user needs to define the table's contents (\cref{definition}) and then can generate the table (\cref{tablegen}).
 
-\thesistitle{tfoo}
-\thesissummary{tfoo}
+Note that it is important to have \emph{every} necessary thesis and publication defined \textbf{before} the first call to a table generation, otherwise, only a partial table will be generated.
 
-\thesistitle{tbaz}
-\thesistitle{tbar}
-%\thesistitle{xxxx}
+\subsection{Association Matrix}\label{association-mx}
+At the author's University, it is customary for Ph.D.\ students to write their doctoral dissertation organised into individual \emph{theses} (corresponding to chapters), and to provide a breakdown on which of their publications are ``proof'' behind the thesis (chapter).
 
-\publication{pasd}
-\publication{pppp}
-\publication{pxyz}
+Commonly, the dissertation's \emph{``Introduction''} and \emph{``Summary''} chapters will provide the full table.
+In addition, at the end of each individual thesis chapters will provide a table with the current thesis's row in the table \emph{highlighted}.
 
-\assignpublication{pppp}{tfoo}
-\assignpublication{pasd}{tbaz}
+An example usage and association matrix is provided in \cref{example}.
 
-\begin{table}[]
+\fi
+
+\section{Example}\label{example}
+
+\immediate\openout\tempfile=assoc-mx-example.tex
+\immediate\write\tempfile{\definethesis{thesesvspublications}{Theses vs.\ publications}{(dummy)}}
+\immediate\write\tempfile{\definethesis{latex}{\detokenize{\LaTeX}}{(dummy)}}
+\immediate\write\tempfile{\definepublication{document-1}{\detokenize{\cite{thesesvspublications}}}}
+\immediate\write\tempfile{\definepublication{document-2}{\detokenize{\cite{latex}}}}
+\immediate\write\tempfile{\definepublication{document-3}{\detokenize{\cite{etoolbox}}}}
+\immediate\write\tempfile{\assignpublication{document-1}{thesesvspublications}}
+\immediate\write\tempfile{\assignpublication{document-3}{thesesvspublications}}    
+\immediate\write\tempfile{\assignpublication{document-2}{latex}}
+\immediate\write\tempfile{\assignpublication{document-3}{latex}}
+\immediate\write\tempfile{\detokenize{\ThesesVSPublications}}
+\immediate\closeout\tempfile
+
+\begin{listing}[h]
+    \inputminted{latex}{assoc-mx-example.tex}
+    \caption{An example usage of \textsf{thesevspublications} defining a $2 \times 3$ matrix.}\label{assoc-mx-example-code}
+\end{listing}
+
+\tvpDisable
+\input{assoc-mx-example}
+\tvpEnable
+
+\begin{table}[h]
     \centering
-    \ThesesVSPublications    
-    \caption{Theses vs.\ Publications}
+    \ThesesVSPublications
+    \caption{The output of the code in \cref{assoc-mx-example-code}, rendered into the \emph{assocation matrix}.}\label{assoc-mx-example}
 \end{table}
 
-\begin{table}[]
-    \centering
-    \ThesesVSPublications[tfoo]
-    \caption{Theses vs.\ Publications for \texttt{tfoo} (\thesistitle{tfoo}) highlighted.}
-\end{table}
+%\fi
 
-\fbox{\textbf{End Document}}
+\FloatBarrier
+\section{Commands offered by the package}\label{commands}
+\subsection{Defining data}\label{define}
+
+\command{definethesis}{\detokenize{\definethesis{<key>}{<title>}{<summary>}}}{%
+Registers the thesis named \texttt{<key>} with the given \texttt{<title>} and \texttt{<summary>}.\footnote{%
+    \emph{Summaries} are currently not used by the package, but can be queried (\cref{query}) by the client.%
+}
+The \emph{title} of the thesis is printed as rows of the table.
+}
+
+\command{definepublication}{\detokenize{\definepublication{<key>}{<body>}}}{%
+Registers the publication named \texttt{<key>} with the given \texttt{<body>}.
+The contents of \emph{body} is printed as the column headings of the table.
+}
+
+\command{assignpublication}{\detokenize{\definepublication{<publication>}{<thesis>}}}{%
+Registers the \texttt{<publication>} to be relevant for the \texttt{<thesis>}.
+The cells at the intersection of the thesis's row and the publication's column will have a \textbullet{} indicating the relevancy.
+}
+
+\subsection{Quering data}\label{query}
+
+\command{numtheses}{\detokenize{\numtheses}}{%
+Returns the number of theses defined.
+}
+
+\command{thesistitle}{\detokenize{\thesistitle{<key>}}}{%
+Returns the registered \emph{title} for the thesis registered with \texttt{<key>}.
+}
+
+\command{thesissummary}{\detokenize{\thesissummary{<key>}}}{%
+Returns the registered \emph{summary} for the thesis registered with \texttt{<key>}.
+}
+
+
+\command{numpublications}{\detokenize{\numpublications}}{%
+Returns the number of publications defined.
+}
+
+\command{publication}{\detokenize{\publication{<key>}}}{%
+Returns the registered \emph{body} for the publication registered with \texttt{<key>}.
+}
+
+
+\subsection{Generating tables}\label{tablegen}
+
+\command{ThesesVSPublications}{\detokenize{\ThesesVSPublications[<thesis>]}}{%
+Generates the full table incorporating the previously registered data.
+If \texttt{[<thesis>]} is given a thesis's \emph{key}, the row for that thesis will be \textbf{highlighted}.
+Highlighting is done by typesetting the thesis's name in \textbf{bold face}, and changing every \textbullet{} in the \emph{other thesis'} rows to \textopenbullet{}.
+}
+
+\section{Advanced (internal) commands}\label{internals}
+All data structures and command macros used by this package are put into the protected \texttt{tvp@} namespace.
+
+%\section{Customisation}
+%\todo[inline]{Not yet, needs to be developed.}
+
+\section{Changelog}\label{changelog}
+\release{2020/10/24}{v0.1a}{Initial release}
+\begin{itemize}
+    \item Initial release of the package.
+    \item Basic functionality of definition and assignment added.
+\end{itemize}
+
+
+\begin{thebibliography}{3}
+\bibitem{thesesvspublications}
+Whisperity. \textit{The \textsf{Theses vs.\ Publications} Package -- Thesis to Reference association matrix generator}.
+CTAN, \url{http://ctan.org/pkg/thesesvspublications} 2020.
+
+\bibitem{latex} 
+Donald E.\ Knuth et al. 
+\textit{\LaTeX{} -- A document preparation system}. 
+Online, \url{http://latex-project.org/}.
+
+\bibitem{etoolbox} 
+Philipp Lehman, Joseph Wright.
+\textit{The \textsf{etoolbox} Package -- An e-\TeX{} Toolbox for Class and Package Authors}
+CTAN, \url{http://ctan.org/pkg/etoolbox}, 2007.
+\end{thebibliography}
+
 \end{document}
