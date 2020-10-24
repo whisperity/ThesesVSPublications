@@ -33,10 +33,7 @@
 \usepackage{minted}
     \usemintedstyle{borland}
     \setminted{autogobble}
-\usepackage{newverbs}
-    \Verbdef\verbat{@}
 \usepackage{placeins}
-\usepackage{todonotes}
 \usepackage{xcolor}
 
 \newrobustcmd{\release}[3]{%
@@ -57,10 +54,14 @@
     \let\ThesesVSPublications\theOldTVP
 }
 
+% Escaped special characters for \texttt and the \write calls.
+% (via http://tex.stackexchange.com/a/223089)
 \def\atchar#1{}
 \edef\atchar{\expandafter\atchar\string\@}
 \def\bslchar#1{}
 \edef\bslchar{\expandafter\bslchar\string\\}
+\def\spchar#1{}
+\edef\spchar{\expandafter\spchar\string\ }
 \def\lbchar#1{}
 \edef\lbchar{\expandafter\lbchar\string\{}
 \def\rbchar#1{}
@@ -74,15 +75,15 @@
 \begin{center}
     \LARGE The \textsf{thesesvspublications} Package \\
     \small \rule{0in}{1em} Thesis to Reference association matrix generator \\
-    \large \rule{0in}{2em} Whisperity %\\
-    %[redacted]\\
+    \large \rule{0in}{2em} Whisperity \\
+    % \\
     \rule{0em}{2em}\thesesvspublicationsReleaseDate \\
     Version \thesesvspublicationsVersion
 \end{center}
 
 
 \section{Introduction}\label{intro}
-The \textsf{thesesvspublications} package allows a convenient creation of bibliography association matrices.
+The \textsf{thesesvspublications} package allows the convenient creation of bibliography association matrices.
 The package aims to automate the generation, without the user having to manually write the table's code and have to deal with the inefficiency of copy-pasting information.
 The package's interface is simple, the user needs to define the table's contents (\cref{define}) and then can generate the table (\cref{tablegen}).
 
@@ -109,15 +110,15 @@ Permission is granted to copy, distribute and\slash or modify this software unde
     \immediate\write\tempfile{\bslchar definethesis{thesesvspublications}{Theses vs.\ Publications}{(dummy)}}
     \immediate\write\tempfile{\bslchar definethesis{latex}{\bslchar LaTeX}{(dummy)}}
     \makeatletter
-       \immediate\write\tempfile{\@percentchar  Using the bibliography at the end of document!}
+       \immediate\write\tempfile{\@percentchar\spchar Using the bibliography at the end of document!}
     \makeatother
-    \immediate\write\tempfile{\bslchar definepublication{document-1}{\bslchar cite{thesesvspublications}}}
-    \immediate\write\tempfile{\bslchar definepublication{document-2}{\bslchar cite{latex}}}
-    \immediate\write\tempfile{\bslchar definepublication{document-3}{\bslchar cite{etoolbox}}}
-    \immediate\write\tempfile{\bslchar assignpublication{document-1}{thesesvspublications}}
-    \immediate\write\tempfile{\bslchar assignpublication{document-3}{thesesvspublications}}
-    \immediate\write\tempfile{\bslchar assignpublication{document-2}{latex}}
-    \immediate\write\tempfile{\bslchar assignpublication{document-3}{latex}}
+    \immediate\write\tempfile{\bslchar definepublication{tvpdoc}{\bslchar cite{thesesvspublications}}}
+    \immediate\write\tempfile{\bslchar definepublication{latexdoc}{\bslchar cite{latex}}}
+    \immediate\write\tempfile{\bslchar definepublication{etoolboxdoc}{\bslchar cite{etoolbox}}}
+    \immediate\write\tempfile{\bslchar assignpublication{tvpdoc}{thesesvspublications}}
+    \immediate\write\tempfile{\bslchar assignpublication{etoolboxdoc}{thesesvspublications}}
+    \immediate\write\tempfile{\bslchar assignpublication{latexdoc}{latex}}
+    \immediate\write\tempfile{\bslchar assignpublication{etoolboxdoc}{latex}}
     \immediate\write\tempfile{\detokenize{\ThesesVSPublications}}
 \immediate\closeout\tempfile
 
@@ -145,12 +146,12 @@ Permission is granted to copy, distribute and\slash or modify this software unde
 Registers the thesis named \texttt{<key>} with the given \texttt{<title>} and \texttt{<summary>}.\footnote{%
     \emph{Summaries} are currently not used by the package, but can be queried (\cref{query}) by the client.%
 }
-The \emph{title} of the thesis is printed as rows of the table.
+The \emph{title} of the thesis is printed as rows of the table, \textbf{in the order of} \texttt{\bslchar definethesis} calls.
 }
 
 \command{definepublication}{\bslchar definepublication\lbchar <key>\rbchar\lbchar <body>\rbchar}{%
 Registers the publication named \texttt{<key>} with the given \texttt{<body>}.
-The contents of \emph{body} is printed as the column headings of the table.
+The contents of \emph{body} is printed as the column headings of the table, \textbf{in the order of} \texttt{\bslchar definepublication} calls.
 }
 
 \command{assignpublication}{\bslchar assignpublication\lbchar <publication>\rbchar\lbchar <thesis>\rbchar}{%
@@ -158,7 +159,7 @@ Registers the \texttt{<publication>} to be relevant for the \texttt{<thesis>}.
 The cells at the intersection of the thesis's row and the publication's column will have a \textbullet{}    , indicating the relevancy.
 }
 
-\subsection{Quering data}\label{query}
+\subsection{Querying data}\label{query}
 
 \command{numtheses}{\bslchar numtheses}{%
 Returns the number of theses defined.
@@ -186,32 +187,30 @@ Returns the registered \emph{body} for the publication registered with \texttt{<
 
 \command{ThesesVSPublications}{\bslchar ThesesVSPublications[<thesis>]}{%
 Generates the full table incorporating the previously registered data.
+Internally, a \texttt{tabular} environment is created with the table's data generated by the package.
+It is the user's responsibility to wrap this into a floating \texttt{table}, if they so wish.
+
 If \texttt{[<thesis>]} is given a thesis's \emph{key}, the row for that thesis will be \textbf{highlighted}.
 Highlighting is done by typesetting the thesis's name in \textbf{bold face}, and changing every \textbullet{} in the \emph{other thesis'} rows to \textopenbullet{}.
 
-Using \texttt{\bslchar ThesesVSPublications[latex]} on the example of \cref{example}.
 \begin{table}[H]
     \centering
     \ThesesVSPublications[latex]
-    \caption{Using the definitions in \cref{assoc-mx-example-code}, but rendering a highlighted row (for thesis \emph{key} \texttt{latex}) in the table.}\label{highlight-row}
+    \caption{Using the definitions in \cref{assoc-mx-example-code}, but rendering a highlighted row (for thesis \emph{key} \texttt{latex}, via \texttt{\bslchar ThesesVSPublications[latex]}) in the table.}\label{highlight-row}
 \end{table}
 }
 
 \FloatBarrier
-\section{Advanced (internal) commands}\label{internals}
-All data structures and command macros used by this package are put into the protected \texttt{tvp@} namespace.
+\subsection{Reset \textsf{thesesvspublications} and create a different matrix}
 
-\subsection{\texttt{tvp@Reset}}
-
-\command{tvp@Reset}{\bslchar tvp@Reset}{%
-Clears \textbf{all} internal data structures and definitions of the package, allowing the document to typeset more matrices independently.
+\command{resetthesesvspublications}{\bslchar resetthesesvspublications}{%
+Clears \textbf{all} internal data structures and definitions of the package, allowing the user to later typeset a different, independent matrix.
+The previously defined entries are lost, and in case the ``previous'' matrix is needed, it must be set up again with a sequence of definition commands (see \cref{define}).
 
 For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-example-code} in the same source file will create the smaller matrix (seen in \cref{reset-example}) at the second invocation of \texttt{\bslchar ThesesVSPublications}.
 
 \immediate\openout\tempfile=reset-example.tex
-    \immediate\write\tempfile{\detokenize{\makeatletter}}
-    \immediate\write\tempfile{    \bslchar tvp\atchar Reset}
-    \immediate\write\tempfile{\detokenize{\makeatother}}
+    \immediate\write\tempfile{\bslchar resetthesesvspublications}
     \immediate\write\tempfile{\bslchar definethesis{sample}{Sample}{(dummy)}}
     \immediate\write\tempfile{\bslchar definepublication{x}{x}}
     \immediate\write\tempfile{\bslchar assignpublication{x}{sample}}
@@ -231,23 +230,18 @@ For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-ex
     \centering
     \ThesesVSPublications
     \caption{The output of the code in \cref{reset-example-code}.
-        This should be a $1 \times 2$ matrix (excluding header row).}\label{reset-example}
+        This should be a $1 \times 1$ matrix (excluding header row).}\label{reset-example}
 \end{table}
 
 
 \FloatBarrier
 }
 
-
-
-
-
 %\section{Customisation}
 %\todo[inline]{Not yet, needs to be developed.}
 
 \section{Development}
-The development of \textsf{thesesvspublications} is done on GitHub: \\
-    \url{http://github.com/whisperity/thesesvspublications}.
+The development of \textsf{thesesvspublications} is done on GitHub: \url{http://github.com/whisperity/thesesvspublications}.
 Please report issues and submit patches here.
 
 \section{Changelog}\label{changelog}

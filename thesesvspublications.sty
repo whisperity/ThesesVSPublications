@@ -28,7 +28,7 @@
 \newrobustcmd{\thesesvspublicationsVersion}{1.0}
 
 \ExplSyntaxOn
-% (via https://tex.stackexchange.com/a/300215)
+% (via http://tex.stackexchange.com/a/300215)
 \NewExpandableDocumentCommand{\egreg@Repeat}{O{}mm}
  {
   \int_compare:nT { #2 > 0 }
@@ -52,15 +52,19 @@
 %% Returns the number of theses that are defined.
 \newrobustcmd{\numtheses}{\the\value{tvp@ThesisCnt}}
 
-%% \definethesis{<key>}{<title>}{<thesis summary>}
-%% defines the given thesis with the key.
-\newrobustcmd{\definethesis}[3]{%
+%% Registers the thesis with the given key, title, and text/summary/description.
+\newrobustcmd{\tvp@NewThesis}[3]{%
     \stepcounter{tvp@ThesisCount}%
     % 
     \listcsgadd{tvp@Theses}{#1}%
     \expandafter\def\csname tvp@Theses@\thetvp@ThesisCount\endcsname{#1}%
     \expandafter\def\csname tvp@ThesisTitles@\thetvp@ThesisCount\endcsname{#2}%
     \expandafter\def\csname tvp@ThesisTexts@\thetvp@ThesisCount\endcsname{#3}%
+}
+%% \definethesis{<key>}{<title>}{<thesis summary>}
+%% defines the given thesis with the key.
+\newrobustcmd{\definethesis}[3]{%
+    \tvp@NewThesis{#1}{#2}{#3}%
 }
 
 %% Retrieve the name for the <index>th thesis.
@@ -109,14 +113,18 @@
 %% Returns the number of publications that are defined.
 \newrobustcmd{\numpublications}{\the\value{tvp@ThesisCnt}}
 
-%% \definethesis{<key>}{<text>}
-%% defines the given publication text body with the given key.
-\newrobustcmd{\definepublication}[2]{%
+%% Registers the public with the given key, and body.
+\newrobustcmd{\tvp@NewPublication}[2]{%
     \stepcounter{tvp@PublicationCount}%
     % 
     \listcsgadd{tvp@Publications}{#1}%
     \expandafter\def\csname tvp@Publications@\thetvp@PublicationCount\endcsname{#1}%
     \expandafter\def\csname tvp@PublicationTexts@\thetvp@PublicationCount\endcsname{#2}%
+}
+%% \definethesis{<key>}{<text>}
+%% defines the given publication text body with the given key.
+\newrobustcmd{\definepublication}[2]{%
+    \tvp@NewPublication{#1}{#2}%
 }
 
 %% Retrieve the name for the <index>th publication.
@@ -151,29 +159,30 @@
 %% Internal data structure holding the thesis-to-publication assignments.
 \newcommand{\tvp@AssignMatrix}{}
 
-%% assignpublication <publication-key> <thesis-key>
-%% assigns the given publication to be relevant for the given thesis.
-\newrobustcmd{\assignpublication}[2]{%
+%% Sets that #1 publication is related to #2 thesis (both args are keys).
+\newrobustcmd{\tvp@AssignPublicationToThesis}[2]{%
     \tvp@FindThesisIndex{#2}     % CursorT set.
     \tvp@FindPublicationIndex{#1}% CursorP set.
     % Format is: (thesis,publication) pairs in the list.
     \listcsxadd{tvp@AssignMatrix}{(\tvp@ThesisName{\thetvp@CursorT},\tvp@PublicationName{\thetvp@CursorP})}%
 }
+%% assignpublication <publication-key> <thesis-key>
+%% assigns the given publication to be relevant for the given thesis.
+\newrobustcmd{\assignpublication}[2]{%
+    \tvp@AssignPublicationToThesis{#1}{#2}%
+}
 
-% DANGEROUS! Clear the internal data structures!
+%% Clear all the internal data structures, undefine all commands, and reset all counters.
 \newrobustcmd{\tvp@Reset}{%
     % Clear the data store macros:
     \forloop[-1]{tvp@CursorC}{\value{tvp@ThesisCount}}{\value{tvp@CursorC} > 0}{%
         \expandafter\def\csname tvp@Theses@\thetvp@CursorC\endcsname{}%
         \expandafter\def\csname tvp@ThesisTitles@\thetvp@CursorC\endcsname{}%
         \expandafter\def\csname tvp@ThesisTexts@\thetvp@CursorC\endcsname{}%
-        
-        Remove thesis \tvp@ThesisName{\thetvp@CursorC}%
     }%
     \forloop[-1]{tvp@CursorC}{\value{tvp@PublicationCount}}{\value{tvp@CursorC} > 0}{%
         \expandafter\def\csname tvp@Publications@\thetvp@CursorC\endcsname{}%
         \expandafter\def\csname tvp@PublicationTexts@\thetvp@CursorC\endcsname{}%
-        Remove publ \tvp@PublicationName{\thetvp@CursorC}%
     }%
     % Reset the lists and counters:
     \renewcommand{\tvp@Theses}{}%
@@ -185,6 +194,10 @@
     \setcounter{tvp@CursorT}{0}%
     \setcounter{tvp@CursorP}{0}%
     \setcounter{tvp@CursorC}{0}%
+}
+%% DANGEROUS! Clear the internal data structures!
+\newrobustcmd{\resetthesesvspublications}{%
+    \tvp@Reset%
 }
 
 %% Renders the heading of the table.
@@ -214,7 +227,7 @@
 %% Returns the visual blip part of the \ThesesVSPublications table.
 \newcommand{\tvp@RowBlip}[2]{%
     \tvp@ThesisPublicationAssigned{#1}{#2}{%
-        \iftoggle{tvp@AreAnyHighlightSet}{
+        \iftoggle{tvp@AreAnyHighlightSet}{%
             \iftoggle{tvp@IsCurrentRowHighlighted}{\textbullet}{\textopenbullet}%
         }{%
             \textbullet%
@@ -249,7 +262,7 @@
 
 %% Typesets the Theses vs. Publications table.
 %% The argument of <current-thesis> will highlight the row of the given thesis, if given.
-\newcommand{\ThesesVSPublications}[1][0]{%
+\newcommand{\tvp@MakeTabular}[1][0]{%
     \renewcommand{\tvp@RowRenderHELPER}[1]{%
         % Set the global toggle whether highlighting is enabled or not.
         \ifthenelse{\equal{#1}{0}}{%
@@ -278,6 +291,9 @@
         \hline
         \forlistcsloop{\tvp@RowRenderHELPER}{tvp@Theses}%
     \end{tabular}%
+}
+\newrobustcmd{\ThesesVSPublications}{%
+    \tvp@MakeTabular%
 }
 
 \endinput
