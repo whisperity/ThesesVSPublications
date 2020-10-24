@@ -15,6 +15,7 @@
 %
 % This work consists of the files thesesvspublications.sty
 % and thesesvspublications.tex.
+%
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{thesesvspublications}[2020/10/24 v1.0 Theses vs. Publications table generator]
 
@@ -206,22 +207,33 @@
 
 %% Internal toggle that specifies whether the current row of \ThesesVSPublications
 %% should be highlighted or not.
+\newtoggle{tvp@AreAnyHighlightSet}
 \newtoggle{tvp@IsCurrentRowHighlighted}
 
 %% tvp@RowBlip{<thesis-key>}{<publication-key>}
 %% Returns the visual blip part of the \ThesesVSPublications table.
 \newcommand{\tvp@RowBlip}[2]{%
     \tvp@ThesisPublicationAssigned{#1}{#2}{%
-        \iftoggle{tvp@IsCurrentRowHighlighted}{\textbullet}{\textopenbullet}%
-    }{}%
+        \iftoggle{tvp@AreAnyHighlightSet}{
+            \iftoggle{tvp@IsCurrentRowHighlighted}{\textbullet}{\textopenbullet}%
+        }{%
+            \textbullet%
+        }%
+    }{%
+        %
+    }%
 }
 
 %% tvp@RenderRow{<key>}
 %% Renders the row for the thesis defined as <key>.
 \newcommand{\tvp@RenderRow}[1]{%
     \tvp@FindThesisIndex{#1}%
-    \iftoggle{tvp@IsCurrentRowHighlighted}{%
-        \textbf{\thetvp@CursorT. \thesistitle{#1}}%
+    \iftoggle{tvp@AreAnyHighlightSet}{%
+        \iftoggle{tvp@IsCurrentRowHighlighted}{%
+            \thetvp@CursorT. \textbf{\thesistitle{#1}}%
+        }{%
+            \thetvp@CursorT. \thesistitle{#1}%
+        }%
     }{%
         \thetvp@CursorT. \thesistitle{#1}%
     }%
@@ -239,16 +251,19 @@
 %% The argument of <current-thesis> will highlight the row of the given thesis, if given.
 \newcommand{\ThesesVSPublications}[1][0]{%
     \renewcommand{\tvp@RowRenderHELPER}[1]{%
-        % Set highlight for current row.
-        \ifthenelse{\equal{##1}{#1}}{%
-            \global\toggletrue{tvp@IsCurrentRowHighlighted}%
-        }{%
-            \global\togglefalse{tvp@IsCurrentRowHighlighted}%
-        }%
-        % Set highlight for row if all row should be highlighted.
+        % Set the global toggle whether highlighting is enabled or not.
         \ifthenelse{\equal{#1}{0}}{%
-            \global\toggletrue{tvp@IsCurrentRowHighlighted}%
-        }{}%
+            \global\togglefalse{tvp@AreAnyHighlightSet}%
+        }{%
+            \global\toggletrue{tvp@AreAnyHighlightSet}%
+            % 
+            % Set highlight for current row.
+            \ifthenelse{\equal{##1}{#1}}{%
+                \global\toggletrue{tvp@IsCurrentRowHighlighted}%
+            }{%
+                \global\togglefalse{tvp@IsCurrentRowHighlighted}%
+            }%
+        }%
         %
         \tvp@RenderRow{##1} \\
         \hline%
