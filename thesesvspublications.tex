@@ -83,6 +83,8 @@
     Version \thesesvspublicationsVersion
 \end{center}
 
+\tableofcontents
+
 \section{Introduction}\label{intro}
 The \textsf{thesesvspublications} package allows the convenient creation of bibliography association matrices.
 The package aims to automate the generation, without the user having to manually write the table's code and have to deal with the inefficiency of copy-pasting information.
@@ -98,30 +100,32 @@ In addition, at the end of each individual thesis chapters will provide a table 
 
 An example usage and association matrix is provided in \cref{example}.
 
-
 \subsection{Licence}
 Copyright \textcopyright\ 2020 Whisperity.
 Permission is granted to copy, distribute and\slash or modify this software under the terms of the \emph{\LaTeX{} Project Public License}, version \emph{1.3c} or newer.\footnote{%
     \url{http://www.latex-project.org/lppl}%
 }
 
-\section{Example}\label{example}
+\subsection{Example}\label{example}
 The code in \cref{assoc-mx-example-code} shows the usage of this package.
 The definitions (\cref{define}) should be done early in the document, but at least before the first table render (\cref{tablegen}) call.
 
 \immediate\openout\tempfile=assoc-mx-example.aux
-    \immediate\write\tempfile{\bslchar definethesis{thesesvspublications}{Theses vs.\ Publications}{(dummy)}}
-    \immediate\write\tempfile{\bslchar definethesis{latex}{\bslchar LaTeX}{(dummy)}}
+    \immediate\write\tempfile{\bslchar definethesis{thesesvspublications}{Theses vs.\ Publications}}
+    \immediate\write\tempfile{\bslchar definethesis{latex}{\bslchar LaTeX}}
+    \immediate\write\tempfile{}
     \makeatletter
        \immediate\write\tempfile{\@percentchar\spchar Using the bibliography at the end of document!}
     \makeatother
     \immediate\write\tempfile{\bslchar definepublication{tvpdoc}{\bslchar cite{thesesvspublications}}}
     \immediate\write\tempfile{\bslchar definepublication{latexdoc}{\bslchar cite{latex}}}
     \immediate\write\tempfile{\bslchar definepublication{etoolboxdoc}{\bslchar cite{etoolbox}}}
+    \immediate\write\tempfile{}
     \immediate\write\tempfile{\bslchar assignpublication{tvpdoc}{thesesvspublications}}
     \immediate\write\tempfile{\bslchar assignpublication{etoolboxdoc}{thesesvspublications}}
     \immediate\write\tempfile{\bslchar assignpublication{latexdoc}{latex}}
     \immediate\write\tempfile{\bslchar assignpublication{etoolboxdoc}{latex}}
+    \immediate\write\tempfile{}
     \immediate\write\tempfile{\detokenize{\ThesesVSPublications}}
 \immediate\closeout\tempfile
 
@@ -140,15 +144,12 @@ The definitions (\cref{define}) should be done early in the document, but at lea
     \caption{The output of the code in \cref{assoc-mx-example-code}, rendered into the \emph{assocation matrix}.}\label{assoc-mx-example}
 \end{table}
 
-
 \FloatBarrier
-\section{Commands offered by the package}\label{commands}
-\subsection{Defining data}\label{define}
+\section{Commands}\label{commands}
+\subsection{Registering entries}\label{define}
 
 \command{definethesis}{\bslchar definethesis\lbchar <key>\rbchar\lbchar <title>\rbchar\lbchar <summary>\rbchar}{%
-Registers the thesis named \texttt{<key>} with the given \texttt{<title>} and \texttt{<summary>}.\footnote{%
-    \emph{Summaries} are currently not used by the package, but can be queried (\cref{query}) by the client.%
-}
+Registers the thesis named \texttt{<key>} with the given \texttt{<title>}.
 The \emph{title} of the thesis is printed as rows of the table, \textbf{in the order of} \texttt{\bslchar definethesis} calls.
 }
 
@@ -162,7 +163,7 @@ Registers the \texttt{<publication>} to be relevant for the \texttt{<thesis>}.
 The cells at the intersection of the thesis's row and the publication's column will have a \textbullet{}    , indicating the relevancy.
 }
 
-\subsection{Querying data}\label{query}
+\subsection{Queries}\label{query}
 
 \command{numtheses}{\bslchar numtheses}{%
 Returns the number of theses defined.
@@ -172,11 +173,6 @@ Returns the number of theses defined.
 Returns the registered \emph{title} for the thesis registered with \texttt{<key>}.
 }
 
-\command{thesissummary}{\bslchar thesissummary\lbchar <key>\rbchar}{%
-Returns the registered \emph{summary} for the thesis registered with \texttt{<key>}.
-}
-
-
 \command{numpublications}{\bslchar numpublications}{%
 Returns the number of publications defined.
 }
@@ -185,8 +181,7 @@ Returns the number of publications defined.
 Returns the registered \emph{body} for the publication registered with \texttt{<key>}.
 }
 
-
-\subsection{Generating tables}\label{tablegen}
+\subsection{Table generator: \texttt{ThesesVSPublications}}\label{tablegen}
 
 \command{ThesesVSPublications}{\bslchar ThesesVSPublications[<thesis>]}{%
 Generates the full table incorporating the previously registered data.
@@ -206,8 +201,8 @@ Highlighting is done by typesetting the thesis's name in \textbf{bold face}, and
 % Let's use an example of 2×2 matrix for the customisations.
 \newcommand{\docExampleResetTableTwoByTwo}{%
     \tvpReset%
-    \definethesis{sample}{Sample}{(dummy)}%
-    \definethesis{simple}{Simple}{(dummy)}%
+    \definethesis{sample}{Sample}%
+    \definethesis{simple}{Simple}%
     \definepublication{x}{x}%
     \definepublication{y}{y}%
     \assignpublication{x}{sample}%
@@ -278,8 +273,8 @@ All aspects on how the individual elements in the table are rendered can be cust
 }
 
 \makeatletter
-    \def\defaultIndicatorHC{\tvp@Renderer@Default@Indicator@Highlighted@Current}
-    \def\defaultIndicatorHO{\tvp@Renderer@Default@Indicator@Highlighted@Other}
+    \def\defaultIndicatorHC{}%\tvp@Renderer@Default@Indicator@Highlighted@Current}
+    \def\defaultIndicatorHO{}%\tvp@Renderer@Default@Indicator@Highlighted@Other}
 \makeatother
 \command{tvpSetIndicatorHighlighted}{\linebreak\bslchar tvpSetIndicatorHighlighted\lbchar<hl-indicator>\rbchar\lbchar<ot-indicator>\rbchar}{%
     Sets the indicators of thesis-to-publication assignment in the matrix in \emph{highlighting} mode to the result of the \texttt{<hl-indicator>} for the \textbf{highlighted row} and \texttt{<ot-indicator>} for every other row.
@@ -292,7 +287,7 @@ All aspects on how the individual elements in the table are rendered can be cust
 }
 
 \FloatBarrier
-\subsection{Reset and create a different matrix}
+\subsection{Multiple distinct tables: \texttt{tvpReset}}
 
 \command{tvpReset}{\bslchar tvpReset}{%
 Clears \textbf{all} internal data structures and customisations for the package, allowing the user to later typeset a different, independent matrix.
@@ -302,7 +297,7 @@ For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-ex
 
 \immediate\openout\tempfile=reset-example.aux
     \immediate\write\tempfile{\bslchar tvpReset}
-    \immediate\write\tempfile{\bslchar definethesis{sample}{Sample}{(dummy)}}
+    \immediate\write\tempfile{\bslchar definethesis{sample}{Sample}}
     \immediate\write\tempfile{\bslchar definepublication{x}{x}}
     \immediate\write\tempfile{\bslchar assignpublication{x}{sample}}
     \immediate\write\tempfile{\detokenize{\ThesesVSPublications}}

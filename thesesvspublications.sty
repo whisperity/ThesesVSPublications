@@ -16,15 +16,16 @@
 % This work consists of the files thesesvspublications.sty
 % and thesesvspublications.tex.
 %
-\NeedsTeXFormat{LaTeX2e}
+\NeedsTeXFormat{LaTeX2e}[2017/01/01]
 \ProvidesPackage{thesesvspublications}[2020/10/24 v1.0 Theses vs. Publications table generator]
 
 \RequirePackage{etoolbox}
 \RequirePackage{forloop}
 \RequirePackage{ifthen}
+\RequirePackage{textcomp}
 \RequirePackage{xparse}
 
-\newrobustcmd{\thesesvspublicationsReleaseDate}{2020/10/24}
+\newrobustcmd{\thesesvspublicationsReleaseDate}{2020/10/25}
 \newrobustcmd{\thesesvspublicationsVersion}{1.0}
 
 \ExplSyntaxOn
@@ -53,26 +54,23 @@
 \newrobustcmd{\numtheses}{\the\value{tvp@ThesisCnt}}
 
 %% Registers the thesis with the given key, title, and text/summary/description.
-\newrobustcmd{\tvp@NewThesis}[3]{%
+\newrobustcmd{\tvp@NewThesis}[2]{%
     \stepcounter{tvp@ThesisCount}%
     % 
     \listcsgadd{tvp@Theses}{#1}%
     \expandafter\def\csname tvp@Theses@\thetvp@ThesisCount\endcsname{#1}%
     \expandafter\def\csname tvp@ThesisTitles@\thetvp@ThesisCount\endcsname{#2}%
-    \expandafter\def\csname tvp@ThesisTexts@\thetvp@ThesisCount\endcsname{#3}%
 }
 %% \definethesis{<key>}{<title>}{<thesis summary>}
 %% defines the given thesis with the key.
-\newrobustcmd{\definethesis}[3]{%
-    \tvp@NewThesis{#1}{#2}{#3}%
+\newrobustcmd{\definethesis}[2]{%
+    \tvp@NewThesis{#1}{#2}%
 }
 
 %% Retrieve the name for the <index>th thesis.
 \newcommand{\tvp@ThesisName}[1]{\csname tvp@Theses@#1\endcsname}
 %% Retrieve the title for the <index>th thesis.
 \newcommand{\tvp@ThesisTitle}[1]{\csname tvp@ThesisTitles@#1\endcsname}
-%% Retrieve the thesis summary for the <index>th thesis.
-\newcommand{\tvp@ThesisText}[1]{\csname tvp@ThesisTexts@#1\endcsname}
 
 %% Internal command which sets the counter tvp@CursorT to the index of the
 %% thesis with the given <key>.
@@ -178,7 +176,6 @@
     \forloop[-1]{tvp@CursorC}{\value{tvp@ThesisCount}}{\value{tvp@CursorC} > 0}{%
         \expandafter\def\csname tvp@Theses@\thetvp@CursorC\endcsname{}%
         \expandafter\def\csname tvp@ThesisTitles@\thetvp@CursorC\endcsname{}%
-        \expandafter\def\csname tvp@ThesisTexts@\thetvp@CursorC\endcsname{}%
     }%
     \forloop[-1]{tvp@CursorC}{\value{tvp@PublicationCount}}{\value{tvp@CursorC} > 0}{%
         \expandafter\def\csname tvp@Publications@\thetvp@CursorC\endcsname{}%
@@ -354,7 +351,7 @@
     \tvp@TVP@MakeTabular%
 }
 
-%% Sets the renderers to their default versions.
+%% Resets the renderers to their default versions.
 \newcommand{\tvp@Renderer@Reset}{%
     \renewcommand{\tvp@Renderer@TopCorner}{\tvp@Renderer@Default@TopCorner}%
     \renewcommand{\tvp@Renderer@PublicationHeading}[1]{\tvp@Renderer@Default@PublicationHeading{##1}}%
