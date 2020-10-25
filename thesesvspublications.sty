@@ -315,9 +315,9 @@
 
 \newcommand{\tvp@TVP@RowRenderHELPER}[1]{} % Dummy.
 
-%% Typesets the Theses vs. Publications table.
-%% The argument of <current-thesis> will highlight the row of the given thesis, if given.
-\newcommand{\tvp@TVP@MakeTabular}[1][0]{%
+%% Typesets the Theses vs. Publications table, highlighting the row of the given thesis,
+%% or highlighting no rows if #1 is 0.
+\newcommand{\tvp@TVP@MakeTabular}[1]{%
     \renewcommand{\tvp@TVP@RowRenderHELPER}[1]{%
         % Set the global toggle whether highlighting is enabled or not.
         \ifthenelse{\equal{#1}{0}}{%
@@ -347,8 +347,8 @@
         \forlistcsloop{\tvp@TVP@RowRenderHELPER}{tvp@Theses}%
     \end{tabular}%
 }
-\newrobustcmd{\ThesesVSPublications}{%
-    \tvp@TVP@MakeTabular%
+\newrobustcmd{\ThesesVSPublications}[1][0]{%
+    \tvp@TVP@MakeTabular{#1}%
 }
 
 %% Resets the renderers to their default versions.
