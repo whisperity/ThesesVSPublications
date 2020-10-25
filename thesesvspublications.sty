@@ -194,20 +194,37 @@
     \setcounter{tvp@CursorT}{0}%
     \setcounter{tvp@CursorP}{0}%
     \setcounter{tvp@CursorC}{0}%
+    % Reset customisation.
+    \tvp@Renderer@Reset%
 }
 %% DANGEROUS! Clear the internal data structures!
-\newrobustcmd{\resetthesesvspublications}{%
+\newrobustcmd{\tvpReset}{%
     \tvp@Reset%
 }
 
+%% Renderer for the table's 1st cell.
+\newcommand{\tvp@Renderer@Default@TopCorner}{Thesis name}
+\newcommand{\tvp@Renderer@TopCorner}{} % Dummy.
+\newrobustcmd{\tvpSetTopCorner}[1]{%
+    \renewcommand{\tvp@Renderer@TopCorner}{#1}%
+}
+
+%% Renderer for the publication columns' first cells.
+\newcommand{\tvp@Renderer@Default@PublicationHeading}[1]{#1}
+\newcommand{\tvp@Renderer@PublicationHeading}{} % Dummy.
+\newrobustcmd{\tvpSetPublicationHeading}[1]{%
+    \renewcommand{\tvp@Renderer@PublicationHeading}{#1}%
+}
+
+
 %% Renders the heading of the table.
-\newcommand{\tvp@RenderHeading}{%
+\newcommand{\tvp@TVP@RenderHeading}{%
     \setcounter{tvp@CursorP}{\value{tvp@PublicationCount}}%
     \stepcounter{tvp@CursorP}%
     %
-    Thesis name%
+    \tvp@Renderer@TopCorner{}%
     \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorP}}{%
-        & \tvp@PublicationText{\thetvp@CursorC}%
+        & \tvp@Renderer@PublicationHeading{\tvp@PublicationText{\thetvp@CursorC}}%
     }%
 }
 
@@ -223,47 +240,88 @@
 \newtoggle{tvp@AreAnyHighlightSet}
 \newtoggle{tvp@IsCurrentRowHighlighted}
 
-%% tvp@RowBlip{<thesis-key>}{<publication-key>}
+%% Renderer for the indicators in the rows.
+\newcommand{\tvp@Renderer@Default@Indicator}{%
+    \textbullet%
+}
+\newcommand{\tvp@Renderer@Default@Indicator@Highlighted@Current}{%
+    \textbullet%
+}
+\newcommand{\tvp@Renderer@Default@Indicator@Highlighted@Other}{%
+    \textopenbullet%
+}
+\newcommand{\tvp@Renderer@Indicator}{} % Dummy.
+\newcommand{\tvp@Renderer@Indicator@Highlighted@Current}{} % Dummy.
+\newcommand{\tvp@Renderer@Indicator@Highlighted@Other}{} % Dummy.
+\newrobustcmd{\tvpSetIndicator}[1]{%
+    \renewcommand{\tvp@Renderer@Indicator}{#1}%
+}
+\newrobustcmd{\tvpSetIndicatorHighlighted}[2]{%
+    \renewcommand{\tvp@Renderer@Indicator@Highlighted@Current}{#1}%
+    \renewcommand{\tvp@Renderer@Indicator@Highlighted@Other}{#2}%
+}
+
+%% tvp@TVP@Indicator{<thesis-key>}{<publication-key>}
 %% Returns the visual blip part of the \ThesesVSPublications table.
-\newcommand{\tvp@RowBlip}[2]{%
+\newcommand{\tvp@TVP@Indicator}[2]{%
     \tvp@ThesisPublicationAssigned{#1}{#2}{%
         \iftoggle{tvp@AreAnyHighlightSet}{%
-            \iftoggle{tvp@IsCurrentRowHighlighted}{\textbullet}{\textopenbullet}%
+            \iftoggle{tvp@IsCurrentRowHighlighted}{%
+                \tvp@Renderer@Indicator@Highlighted@Current{}%
+            }{%
+                \tvp@Renderer@Indicator@Highlighted@Other{}%
+            }%
         }{%
-            \textbullet%
+            \tvp@Renderer@Indicator{}%
         }%
     }{%
-        %
+        % This field is intentionally left blank.
     }%
 }
 
-%% tvp@RenderRow{<key>}
+%% Renderer for the thesis entries in the rows.
+\newcommand{\tvp@Renderer@Default@ThesisName}[2]{%
+    #1. #2%
+}
+\newcommand{\tvp@Renderer@Default@ThesisName@Highlighted}[2]{%
+    #1. \textbf{#2}%
+}
+\newcommand{\tvp@Renderer@ThesisName}{} % Dummy.
+\newcommand{\tvp@Renderer@ThesisName@Highlighted}{} % Dummy.
+\newrobustcmd{\tvpSetThesisName}[1]{%
+    \renewcommand{\tvp@Renderer@ThesisName}{#1}%
+}
+\newrobustcmd{\tvpSetThesisNameHighlighted}[1]{%
+    \renewcommand{\tvp@Renderer@ThesisName@Highlighted}{#1}%
+}
+
+%% tvp@TVP@RenderRow{<key>}
 %% Renders the row for the thesis defined as <key>.
-\newcommand{\tvp@RenderRow}[1]{%
+\newcommand{\tvp@TVP@RenderRow}[1]{%
     \tvp@FindThesisIndex{#1}%
     \iftoggle{tvp@AreAnyHighlightSet}{%
         \iftoggle{tvp@IsCurrentRowHighlighted}{%
-            \thetvp@CursorT. \textbf{\thesistitle{#1}}%
+            \tvp@Renderer@ThesisName@Highlighted{\thetvp@CursorT}{\thesistitle{#1}}%
         }{%
-            \thetvp@CursorT. \thesistitle{#1}%
+            \tvp@Renderer@ThesisName{\thetvp@CursorT}{\thesistitle{#1}}%
         }%
     }{%
-        \thetvp@CursorT. \thesistitle{#1}%
+        \tvp@Renderer@ThesisName{\thetvp@CursorT}{\thesistitle{#1}}%
     }%
     %
     \setcounter{tvp@CursorP}{\value{tvp@PublicationCount}}%
     \stepcounter{tvp@CursorP}%
     \forloop{tvp@CursorC}{1}{\value{tvp@CursorC} < \value{tvp@CursorP}}{%
-        & \tvp@RowBlip{#1}{\tvp@PublicationName{\thetvp@CursorC}}%
+        & \tvp@TVP@Indicator{#1}{\tvp@PublicationName{\thetvp@CursorC}}%
     }%
 }
 
-\newcommand{\tvp@RowRenderHELPER}[1]{} % Dummy.
+\newcommand{\tvp@TVP@RowRenderHELPER}[1]{} % Dummy.
 
 %% Typesets the Theses vs. Publications table.
 %% The argument of <current-thesis> will highlight the row of the given thesis, if given.
-\newcommand{\tvp@MakeTabular}[1][0]{%
-    \renewcommand{\tvp@RowRenderHELPER}[1]{%
+\newcommand{\tvp@TVP@MakeTabular}[1][0]{%
+    \renewcommand{\tvp@TVP@RowRenderHELPER}[1]{%
         % Set the global toggle whether highlighting is enabled or not.
         \ifthenelse{\equal{#1}{0}}{%
             \global\togglefalse{tvp@AreAnyHighlightSet}%
@@ -278,7 +336,7 @@
             }%
         }%
         %
-        \tvp@RenderRow{##1} \\
+        \tvp@TVP@RenderRow{##1} \\
         \hline%
     }%
     %
@@ -287,13 +345,26 @@
         |%
     }
         \hline
-        \tvp@RenderHeading \\
+        \tvp@TVP@RenderHeading \\
         \hline
-        \forlistcsloop{\tvp@RowRenderHELPER}{tvp@Theses}%
+        \forlistcsloop{\tvp@TVP@RowRenderHELPER}{tvp@Theses}%
     \end{tabular}%
 }
 \newrobustcmd{\ThesesVSPublications}{%
-    \tvp@MakeTabular%
+    \tvp@TVP@MakeTabular%
 }
+
+%% Sets the renderers to their default versions.
+\newcommand{\tvp@Renderer@Reset}{%
+    \renewcommand{\tvp@Renderer@TopCorner}{\tvp@Renderer@Default@TopCorner}%
+    \renewcommand{\tvp@Renderer@PublicationHeading}[1]{\tvp@Renderer@Default@PublicationHeading{##1}}%
+    \renewcommand{\tvp@Renderer@ThesisName}[2]{\tvp@Renderer@Default@ThesisName{##1}{##2}}%
+    \renewcommand{\tvp@Renderer@ThesisName@Highlighted}[2]{\tvp@Renderer@Default@ThesisName@Highlighted{##1}{##2}}%
+    \renewcommand{\tvp@Renderer@Indicator}{\tvp@Renderer@Default@Indicator}%
+    \renewcommand{\tvp@Renderer@Indicator@Highlighted@Current}{\tvp@Renderer@Default@Indicator@Highlighted@Current}%
+    \renewcommand{\tvp@Renderer@Indicator@Highlighted@Other}{\tvp@Renderer@Default@Indicator@Highlighted@Other}%
+}
+% Start the document with the renderers having the default version.
+\tvp@Renderer@Reset
 
 \endinput

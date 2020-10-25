@@ -42,7 +42,7 @@
 
 \newrobustcmd{\command}[3]{%
     \paragraph{\textsf{#1}} \textbf{\color{blue} \texttt{#2}}
-    
+
     #3
 }
 
@@ -66,6 +66,8 @@
 \edef\lbchar{\expandafter\lbchar\string\{}
 \def\rbchar#1{}
 \edef\rbchar{\expandafter\rbchar\string\}}
+\def\hschar#1{}
+\edef\hschar{\expandafter\hschar\string\#}
 
 \newwrite\tempfile
 
@@ -80,7 +82,6 @@
     \rule{0em}{2em}\thesesvspublicationsReleaseDate \\
     Version \thesesvspublicationsVersion
 \end{center}
-
 
 \section{Introduction}\label{intro}
 The \textsf{thesesvspublications} package allows the convenient creation of bibliography association matrices.
@@ -105,8 +106,10 @@ Permission is granted to copy, distribute and\slash or modify this software unde
 }
 
 \section{Example}\label{example}
+The code in \cref{assoc-mx-example-code} shows the usage of this package.
+The definitions (\cref{define}) should be done early in the document, but at least before the first table render (\cref{tablegen}) call.
 
-\immediate\openout\tempfile=assoc-mx-example.tex
+\immediate\openout\tempfile=assoc-mx-example.aux
     \immediate\write\tempfile{\bslchar definethesis{thesesvspublications}{Theses vs.\ Publications}{(dummy)}}
     \immediate\write\tempfile{\bslchar definethesis{latex}{\bslchar LaTeX}{(dummy)}}
     \makeatletter
@@ -123,12 +126,12 @@ Permission is granted to copy, distribute and\slash or modify this software unde
 \immediate\closeout\tempfile
 
 \begin{listing}[H]
-    \inputminted{latex}{assoc-mx-example.tex}
+    \inputminted{latex}{assoc-mx-example.aux}
     \caption{An example usage of \textsf{thesevspublications} defining a $2 \times 3$ matrix.}\label{assoc-mx-example-code}
 \end{listing}
 
 \tvpDisable
-\input{assoc-mx-example}
+\input{assoc-mx-example.aux}
 \tvpEnable
 
 \begin{table}[H]
@@ -200,17 +203,105 @@ Highlighting is done by typesetting the thesis's name in \textbf{bold face}, and
 \end{table}
 }
 
-\FloatBarrier
-\subsection{Reset \textsf{thesesvspublications} and create a different matrix}
+% Let's use an example of 2×2 matrix for the customisations.
+\newcommand{\docExampleResetTableTwoByTwo}{%
+    \tvpReset%
+    \definethesis{sample}{Sample}{(dummy)}%
+    \definethesis{simple}{Simple}{(dummy)}%
+    \definepublication{x}{x}%
+    \definepublication{y}{y}%
+    \assignpublication{x}{sample}%
+    \assignpublication{y}{simple}%
+}
+\newcommand{\loadAndRenderResettingExample}[2][0]{%
+    \begin{figure}[H]
+        \centering
+        \inputminted{latex}{#2}
 
-\command{resetthesesvspublications}{\bslchar resetthesesvspublications}{%
-Clears \textbf{all} internal data structures and definitions of the package, allowing the user to later typeset a different, independent matrix.
+        \docExampleResetTableTwoByTwo
+        \input{#2}
+        \ThesesVSPublications[#1]
+    \end{figure}%
+}
+
+\subsection{Customisation}\label{customise}
+All aspects on how the individual elements in the table are rendered can be customised by setting \emph{renderer} control sequences.
+
+\makeatletter
+    \def\defaultTopCorner{\tvp@Renderer@Default@TopCorner}
+\makeatother
+\command{tvpSetTopCorner}{\bslchar tvpSetTopCorner\lbchar <new-heading>\rbchar}{%
+    Sets the rendered table's top left cell value (by default, ``\emph{\defaultTopCorner}'') to the given \texttt{<new-heading>} value.
+
+    \immediate\openout\tempfile=settopcorner-example.aux
+        \immediate\write\tempfile{\bslchar tvpSetTopCorner{Publication matrix}}
+    \immediate\closeout\tempfile
+    \loadAndRenderResettingExample{settopcorner-example.aux}
+}
+
+\command{tvpSetPublicationHeading}{\bslchar tvpSetPublicationHeading\lbchar<render-command>\rbchar}{%
+    Sets the rendered table's top row's publication cells to be rendered via passing the publication's body (see \cref{query}) to the given \texttt{<render-command>}.
+    This command must be a command that takes \textbf{1} argument, defined by the user earlier.
+
+    \immediate\openout\tempfile=setpublheading-example.aux
+        \immediate\write\tempfile{\bslchar newcommand{\bslchar ttPublHead}[1]{\bslchar texttt{\hschar1}}}
+        \immediate\write\tempfile{\bslchar tvpSetPublicationHeading{\bslchar ttPublHead}}
+    \immediate\closeout\tempfile
+    \loadAndRenderResettingExample{setpublheading-example.aux}
+}
+
+\command{tvpSetThesisName}{\bslchar tvpSetThesisName(Highlighted)\lbchar<render-command>\rbchar}{%
+    Sets the rendered table's left cells' to be rendered via passing the thesis's index and title (see \cref{query}) to the given \texttt{<render-command>}.
+    This command must be a command that takes \textbf{2} arguments, defined by the user earlier.
+    The \texttt{Highlighted} version sets the renderer for the highlighted row, if highlighted rendering (see \cref{tablegen}) is done.
+
+    \immediate\openout\tempfile=setthesisname-example.aux
+        \immediate\write\tempfile{\bslchar newcommand{\bslchar parenThesis}[2]{(\hschar1) \bslchar emph{\hschar2}}}
+        \immediate\write\tempfile{\bslchar newcommand{\bslchar parenThesisBl}[2]{!\hschar1! \bslchar texttt{\hschar2}}}
+        \immediate\write\tempfile{\bslchar tvpSetThesisName{\bslchar parenThesis}}
+        \immediate\write\tempfile{\bslchar tvpSetThesisNameHighlighted{\bslchar parenThesisBl}}
+    \immediate\closeout\tempfile
+    \loadAndRenderResettingExample[simple]{setthesisname-example.aux}
+}
+
+\makeatletter
+    \def\defaultIndicator{\tvp@Renderer@Default@Indicator}
+\makeatother
+\command{tvpSetIndicator}{\bslchar tvpSetIndicator\lbchar<indicator>\rbchar}{%
+    Sets the indicators of thesis-to-publication assignment in the matrix in \emph{non-highlighting} mode to the result of the \texttt{<indicator>}.
+    The default indicator is: \defaultIndicator{}.
+
+    \immediate\openout\tempfile=setindicator-example.aux
+        \immediate\write\tempfile{\bslchar tvpSetIndicator{p}}
+    \immediate\closeout\tempfile
+    \loadAndRenderResettingExample{setindicator-example.aux}
+}
+
+\makeatletter
+    \def\defaultIndicatorHC{\tvp@Renderer@Default@Indicator@Highlighted@Current}
+    \def\defaultIndicatorHO{\tvp@Renderer@Default@Indicator@Highlighted@Other}
+\makeatother
+\command{tvpSetIndicatorHighlighted}{\linebreak\bslchar tvpSetIndicatorHighlighted\lbchar<hl-indicator>\rbchar\lbchar<ot-indicator>\rbchar}{%
+    Sets the indicators of thesis-to-publication assignment in the matrix in \emph{highlighting} mode to the result of the \texttt{<hl-indicator>} for the \textbf{highlighted row} and \texttt{<ot-indicator>} for every other row.
+    The default indicators are: \defaultIndicatorHC{} and \defaultIndicatorHO{}, respectively.
+
+    \immediate\openout\tempfile=setindicator-hl-example.aux
+        \immediate\write\tempfile{\bslchar tvpSetIndicatorHighlighted{c}{o}}
+    \immediate\closeout\tempfile
+    \loadAndRenderResettingExample[simple]{setindicator-hl-example.aux}
+}
+
+\FloatBarrier
+\subsection{Reset and create a different matrix}
+
+\command{tvpReset}{\bslchar tvpReset}{%
+Clears \textbf{all} internal data structures and customisations for the package, allowing the user to later typeset a different, independent matrix.
 The previously defined entries are lost, and in case the ``previous'' matrix is needed, it must be set up again with a sequence of definition commands (see \cref{define}).
 
 For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-example-code} in the same source file will create the smaller matrix (seen in \cref{reset-example}) at the second invocation of \texttt{\bslchar ThesesVSPublications}.
 
-\immediate\openout\tempfile=reset-example.tex
-    \immediate\write\tempfile{\bslchar resetthesesvspublications}
+\immediate\openout\tempfile=reset-example.aux
+    \immediate\write\tempfile{\bslchar tvpReset}
     \immediate\write\tempfile{\bslchar definethesis{sample}{Sample}{(dummy)}}
     \immediate\write\tempfile{\bslchar definepublication{x}{x}}
     \immediate\write\tempfile{\bslchar assignpublication{x}{sample}}
@@ -218,12 +309,12 @@ For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-ex
 \immediate\closeout\tempfile
 
 \begin{listing}[H]
-    \inputminted{latex}{reset-example.tex}
+    \inputminted{latex}{reset-example.aux}
     \caption{Flushing the internal data structure so a different matrix can be typeset.}\label{reset-example-code}
 \end{listing}
 
 \tvpDisable
-\input{reset-example}
+\input{reset-example.aux}
 \tvpEnable
 
 \begin{table}[H]
@@ -237,18 +328,20 @@ For example, putting the code in \cref{assoc-mx-example-code} and \cref{reset-ex
 \FloatBarrier
 }
 
-%\section{Customisation}
-%\todo[inline]{Not yet, needs to be developed.}
-
 \section{Development}
 The development of \textsf{thesesvspublications} is done on GitHub: \url{http://github.com/whisperity/thesesvspublications}.
 Please report issues and submit patches here.
+
+Note that this document acts as a \textbf{test file} to the package, not only a user-facing documentation.
+Any new command or change should be supplemented with appropriate documentation, and the check of the rendered examples.
+If there is a discrepancy or regression in the looks of \emph{this document} that is not explained by the changes, it should be investigated!
 
 \section{Changelog}\label{changelog}
 \release{2020/10/24}{v1.0}{Initial release}
 \begin{itemize}
     \item Initial release of the package.
     \item Basic functionality of definition and assignment added.
+    \item Configuration capabilities are added.
 \end{itemize}
 
 
