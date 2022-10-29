@@ -1,5 +1,5 @@
 %% association-matrix.sty
-%% Copyright 2020 Whisperity
+%% Copyright 2020-2022 Whisperity
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -17,7 +17,7 @@
 % and association-matrix.tex.
 %
 \NeedsTeXFormat{LaTeX2e}[2017/01/01]
-\ProvidesPackage{association-matrix}[2020/10/25 v1.0 Association matrix generator]
+\ProvidesPackage{association-matrix}[2022/10/29 v1.1 Association matrix generator]
 
 \RequirePackage{etoolbox}
 \RequirePackage{forloop}
@@ -25,8 +25,8 @@
 \RequirePackage{textcomp}
 \RequirePackage{xparse}
 
-\newrobustcmd{\amxDate}{2020/10/25}
-\newrobustcmd{\amxVersion}{1.0}
+\newrobustcmd{\amxDate}{2022/10/29}
+\newrobustcmd{\amxVersion}{1.1}
 
 \ExplSyntaxOn
 % (via http://tex.stackexchange.com/a/300215)
@@ -38,6 +38,62 @@
    }
  }
 \ExplSyntaxOff
+
+%%%
+%%%    COMPATIBILITY SHIMS
+%%%
+
+%% Compatibility with the 'array' package, because we need to hand-craft the
+%% table's column specifiers. With the 'array' package changing the definition
+%% of 'tabular' to eagerly parse the specifier for what columns to make, the
+%% logic that built the "|c|c|c|..." sequence in conventional LaTeX broke.
+%%
+%% (via http://tex.stackexchange.com/a/199244)
+\newtoggle{amx@Compatibility@array}
+
+% In pure LaTeX, no compatibility needed because we can expand the tokens in
+% the 'tabular' specifier properly.
+\newenvironment{amx@Tabular}[0]{%
+    \begin{tabular}{|l|%
+        \egreg@Repeat[|]{\expandafter\theamx@ColumnCount}{c}%
+        |}%
+}{%
+    \end{tabular}%
+}%
+
+\@ifpackageloaded{array}{%
+    \global\toggletrue{amx@Compatibility@array}%
+    %
+    \newcolumntype{\amx@amx@Array@Expand}{}%
+    \long\@namedef{NC@rewrite@\string\amx@amx@Array@Expand}{\expandafter\NC@find}%
+    \newcommand{\amx@amx@Array@PreambleTrampoline}{}%
+    %
+    \renewenvironment{amx@Tabular}[0]
+        {%
+            % Creates "|l|c|c|c|c|..." sequence, one 'c' for each column.
+            \protected@edef\amx@amx@Array@PreambleTrampoline{|l|%
+                \egreg@Repeat[|]{\expandafter\theamx@ColumnCount}{c}%
+            |}%
+            \begin{tabular}{\amx@amx@Array@Expand\amx@amx@Array@PreambleTrampoline}
+        }{%
+            \end{tabular}
+        }%
+}{%
+    % Intentionally left empty, the default is good enough.
+}
+
+\newrobustcmd{\amx@CheckCompatibility}[0]{%
+    \@ifpackageloaded{array}{%
+        \iftoggle{amx@Compatibility@array}{%
+            % The compatibility was injected, thus no error needed.
+        }{%
+            \PackageError{association-matrix}{%
+                Package 'array' loaded after 'association-matrix' -- compatibility was not set up}{%
+                Make sure to load 'association-matrix' AFTER 'array' because a compatibility shim needs to be inserted for '\\amxgenerate' to work properly.
+            }%
+        }%
+    }{}%
+}
 
 %%%
 %%%    FIELDS, REPRESENTATION AND DEFINITION FUNCTIONS
@@ -79,7 +135,7 @@
 %% Registers the row with the given key, and text.
 \newrobustcmd{\amx@NewRow}[2]{%
     \stepcounter{amx@RowCount}%
-    % 
+    %
     \listcsgadd{amx@Rows}{#1}%
     \expandafter\def\csname amx@Rows@\theamx@RowCount\endcsname{#1}%
     \expandafter\def\csname amx@RowTexts@\theamx@RowCount\endcsname{#2}%
@@ -99,7 +155,7 @@
 %% Registers the public with the given key, and body.
 \newrobustcmd{\amx@NewColumn}[2]{%
     \stepcounter{amx@ColumnCount}%
-    % 
+    %
     \listcsgadd{amx@Cols}{#1}%
     \expandafter\def\csname amx@Cols@\theamx@ColumnCount\endcsname{#1}%
     \expandafter\def\csname amx@ColTexts@\theamx@ColumnCount\endcsname{#2}%
@@ -298,7 +354,7 @@
             \global\togglefalse{amx@AreAnyHighlightSet}%
         }{%
             \global\toggletrue{amx@AreAnyHighlightSet}%
-            % 
+            %
             % Set highlight for current row.
             \ifthenelse{\equal{##1}{#1}}{%
                 \global\toggletrue{amx@IsCurrentRowHighlighted}%
@@ -311,15 +367,14 @@
         \hline%
     }%
     %
-    \begin{tabular}{|l|%
-        \egreg@Repeat[|]{\expandafter\theamx@ColumnCount}{c}%
-        |%
-    }
+    \amx@CheckCompatibility{}%
+    %
+    \begin{amx@Tabular}
         \hline
         \amx@amx@RenderHeading \\
         \hline
         \forlistcsloop{\amx@amx@RowRenderHELPER}{amx@Rows}%
-    \end{tabular}%
+    \end{amx@Tabular}%
 }
 \newrobustcmd{\amxgenerate}[1][0]{%
     \amx@amx@MakeTabular{#1}%
